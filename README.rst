@@ -12,9 +12,9 @@ Start by installing the dependencies:
 1. numpy
 2. matplotlib
 3. scipy
-3. pyfits (I know)
-4. kplr (https://github.com/dfm/kplr)
-5. mahotas 
+4. pyfits (I know)
+5. kplr (https://github.com/dfm/kplr)
+6. mahotas 
 
 Running “pip install f3” or cloning this repository and running setup.py should then
 enable you to run the code.
