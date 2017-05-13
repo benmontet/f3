@@ -14,7 +14,7 @@ Start by installing the dependencies:
 3. scipy
 4. pyfits (I know)
 5. kplr (https://github.com/dfm/kplr)
-6. mahotas 
+6. mahotas (http://mahotas.readthedocs.io/en/latest/#)
 
 Running “pip install f3” or cloning this repository and running setup.py should then
 enable you to run the code.
