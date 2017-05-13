@@ -13,8 +13,8 @@ Start by installing the dependencies:
 2. matplotlib
 3. scipy
 4. pyfits (I know)
-5. kplr (https://github.com/dfm/kplr)
-6. mahotas (http://mahotas.readthedocs.io/en/latest/#)
+5. kplr (https://github.com/dfm/kplr) (The version pip will get you is insufficent, grab the one on github)
+6. mahotas (http://mahotas.readthedocs.io/en/latest/#) (pip will install this for you along with f3)
 
 Running “pip install f3” or cloning this repository and running setup.py should then
 enable you to run the code.
