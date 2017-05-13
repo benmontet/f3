@@ -36,9 +36,10 @@ class star(object):
         dir = os.path.dirname(__file__)
         try:
             obs_info = os.path.join(dir, '../obs_info.txt')
+            self.times, self.qs, self.year = np.loadtxt(obs_info, unpack=True)
         except:
             obs_info = os.path.join(dir, 'obs_info.txt')
-        self.times, self.qs, self.year = np.loadtxt(obs_info, unpack=True)
+            self.times, self.qs, self.year = np.loadtxt(obs_info, unpack=True)
 
 
  
