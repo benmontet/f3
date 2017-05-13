@@ -43,5 +43,5 @@ There is a jupyter notebook in this directory which provides an example use case
 Cite the code
 ----------------
 
-Please cite `Montet, Tovar, and Foreman-Mackey (to be submitted) if you find this code
+Please cite `Montet, Tovar, and Foreman-Mackey’ (to be submitted) if you find this code
 useful in your research. If it is after May 18, this code is available on the arXiv and we’ll put a link here when that is true.
