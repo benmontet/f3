@@ -13,6 +13,8 @@ import matplotlib.image as mpimg
 fmt = ['ko', 'rD', 'b^', 'gs']
 
 
+
+
 class star(object):
     """
     Routines to perform photometry on the Kepler full frame images
@@ -31,7 +33,9 @@ class star(object):
         else:
             self.ffi_dir = ffi_dir
         
-        self.times, self.qs, self.year = np.loadtxt('obs_info.txt', unpack=True)
+        dir = os.path.dirname(__file__)
+        obs_info = os.path.join(dir, '../obs_info.txt')
+        self.times, self.qs, self.year = np.loadtxt(obs_info, unpack=True)
 
 
  

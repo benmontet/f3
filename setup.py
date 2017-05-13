@@ -11,6 +11,9 @@ setup(
     packages=[
         'f3',
     ],
+    data_files=[
+        ('', ['f3/obs_info.txt'])
+    ],
     url='http://github.com/benmontet/f3',
     description='Photometry for Kepler Full Frame Images',
     package_data={'': ['README.rst', 'LICENSE']},
