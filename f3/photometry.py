@@ -13,7 +13,7 @@ import matplotlib.image as mpimg
 fmt = ['ko', 'rD', 'b^', 'gs']
 
 
-class field(object):
+class star(object):
     """
     Routines to perform photometry on the Kepler full frame images
     
