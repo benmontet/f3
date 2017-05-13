@@ -8,7 +8,6 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import splrep, splev
 import os
 import files
-import routines
 import matplotlib.image as mpimg
 
 fmt = ['ko', 'rD', 'b^', 'gs']
