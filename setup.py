@@ -3,7 +3,7 @@ import f3
 
 setup(
     name='f3',
-    version='1.0',
+    version='1.0.2',
     license='MIT',
     long_description=open('README.rst').read(),
     author='Ben Montet',
@@ -11,9 +11,7 @@ setup(
     packages=[
         'f3',
     ],
-    data_files=[
-        ('', ['f3/obs_info.txt'])
-    ],
+    include_package_data=True,
     url='http://github.com/benmontet/f3',
     description='Photometry for Kepler Full Frame Images',
     package_data={'': ['README.rst', 'LICENSE']},
