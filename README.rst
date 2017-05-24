@@ -1,3 +1,8 @@
+.. image:: https://zenodo.org/badge/90557386.svg
+   :target: https://zenodo.org/badge/latestdoi/90557386
+.. image:: http://img.shields.io/badge/arXiv-1705.07928-orange.svg?style=flat
+        :target: http://arxiv.org/abs/1705.07928
+
 f3
 ===
 
