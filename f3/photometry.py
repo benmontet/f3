@@ -330,7 +330,7 @@ class star(object):
 
             
         
-    def adjust_aperture(self, image_region=15):
+    def adjust_aperture(self, image_region=15, ignore_bright=0):
         """
         Develop a panel showing the current aperture and the light curve as judged from that aperture.
         Clicking on individual pixels on the aperture will toggle those pixels on or off into the
@@ -338,6 +338,7 @@ class star(object):
         Clicking on the 0th row or column will turn off all pixels in that column or row, respectively.
         Will iterate continuously until the figure is closed without updating any pixels.
         """
+        self.ignore_bright = ignore_bright
         self.calc_fluxes()
         
         self.coordsx = []
@@ -388,7 +389,7 @@ class star(object):
         self.do_photometry()
 
     
-    def calc_fluxes(self, ignore_bright=0, min_flux = 5000, outlier_iterations=5,
+    def calc_fluxes(self, min_flux = 5000, outlier_iterations=5,
                        max_outlier_obs=4, outlier_limit=1.7):
         """
         Determine the suitable reference stars, and then the total flux in those stars and 
@@ -406,18 +407,18 @@ class star(object):
         numer_pix = self.postcard[:,self.targets == 1]
         numer = np.sum(numer_pix, axis=1)
         
-        tar_vals = np.zeros((len(self.times), int(np.max(self.targets)+1-2-ignore_bright)))
+        tar_vals = np.zeros((len(self.times), int(np.max(self.targets)+1-2-self.ignore_bright)))
         
-        for i in xrange(2+ignore_bright,int(np.max(self.targets)+1)):
+        for i in xrange(2+self.ignore_bright,int(np.max(self.targets)+1)):
             tval = np.sum(self.postcard[:,self.targets == i], axis=1)
             #denom += tval/np.median(tval)
-            tar_vals[:,i-2-ignore_bright] = tval #/ np.median(tval)
+            tar_vals[:,i-2-self.ignore_bright] = tval #/ np.median(tval)
             
         for i in xrange(len(self.obs_filenames)):
             if np.max(tar_vals[i]) < 5000:
                 tar_vals[self.qs == self.qs[i]] = 0.0
 
-        all_tar = np.zeros((len(self.times), int(np.max(self.targets)-ignore_bright)))
+        all_tar = np.zeros((len(self.times), int(np.max(self.targets)-self.ignore_bright)))
         all_tar[:,0] = numer
         all_tar[:,1:] = tar_vals
         
