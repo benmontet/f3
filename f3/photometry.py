@@ -372,12 +372,13 @@ class star(object):
             self.generate_panel(img)
 
  
-    def data_for_target(self, do_roll=True):
+    def data_for_target(self, do_roll=True, ignore_bright=0):
         """
         Determine the normalized photometry, accounting for effects shared by reference stars
         """
         self.calc_fluxes()
         self.roll_best = np.zeros((4,2))
+	self.ignore_bright = ignore_bright
         
         if do_roll == True:
             for i in xrange(4):
