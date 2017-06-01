@@ -378,7 +378,7 @@ class star(object):
         """
         self.calc_fluxes()
         self.roll_best = np.zeros((4,2))
-	    self.ignore_bright = ignore_bright
+	self.ignore_bright = ignore_bright
         
         if do_roll == True:
             for i in xrange(4):
