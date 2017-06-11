@@ -9,6 +9,8 @@ f3
 **Full Frame Fotometry package for interacting with and measuring photometry
 for targets observed in the Kepler Full Frame Images**
 
+You can read the documentation at: `f3.readthedocs.io <http://f3.readthedocs.io>`_.
+
 Installation
 ------------
 
@@ -49,4 +51,22 @@ Cite the code
 ----------------
 
 Please cite `Montet, Tovar, and Foreman-Mackey’ (submitted) if you find this code
-useful in your research. You can find a preprint of the paper at https://arxiv.org/abs/1705.07928
+useful in your research. You can find a preprint of the paper at https://arxiv.org/abs/1705.07928.
+The bibtex entry for this paper is
+
+.. code-block:: tex
+
+    @ARTICLE{f3,
+       author = {{Montet}, B.~T. and {Tovar}, G. and {Foreman-Mackey}, D.},
+        title = "{Long Term Photometric Variability in Kepler Full Frame Images: Magnetic Cycles of Sun-Like Stars}",
+      journal = {ArXiv e-prints},
+    archivePrefix = "arXiv",
+       eprint = {1705.07928},
+     primaryClass = "astro-ph.SR",
+     keywords = {Astrophysics - Solar and Stellar Astrophysics},
+         year = 2017,
+        month = may,
+       adsurl = {http://adsabs.harvard.edu/abs/2017arXiv170507928M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
+
