@@ -19,7 +19,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../f3'))
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../'))
+
 
 # -- General configuration ------------------------------------------------
 
@@ -179,12 +180,13 @@ html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 import sys
-from unittest.mock import MagicMock
+from mock import Mock as MagicMock
 
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
             return MagicMock()
 
-MOCK_MODULES = ['numpy', 'matplotlib.pyplot', 'mahotas']
+MOCK_MODULES = ['numpy', 'matplotlib', 'matplotlib.pyplot', 'mahotas', 'pyfits', 'kplr', 'scipy', 'scipy.ndimage', 'scipy.ndimage.measurements',
+                'scipy.interpolate', 'matplotlib.image']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
