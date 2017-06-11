@@ -17,11 +17,12 @@ fmt = ['ko', 'rD', 'b^', 'gs']
 
 class star(object):
     """
-    Routines to perform photometry on the Kepler full frame images
-    
-    Ben Montet, 2017
-    https://github.com/benmontet/f3
-    See repository for a tutorial
+    The main interface to the f3 photometry package
+
+    Args:
+        kic: The Kepler Input Catalog identifier for the target for which you wish to do photometry
+        ffi_dir: The directory relative to your current working directory where your 
+            full frame images are stored (default: ``ffidata/``)
     """
     
     
@@ -46,8 +47,15 @@ class star(object):
          
     def make_postcard(self, npix=300, shape=(1070, 1132), buffer_size=15):
         """
-        Develop a "postcard" region, npix by npix in size, around the target star.
+        Develop a "postcard" region around the target star.
         Other stars in this postcard will be used as possible reference stars.
+        
+        Args: 
+            npix: The size of the postcard region. The region will be a square with sides npix pixels
+                (default: ``300``)
+            shape: The size of each individual image. For Kepler/K2 FFIs this should never need to be
+                changed from the default, but will be different for e.g. TESS FFIs (default: ``(1070, 1132)``)
+            buffer_size: The number of pixels at the edge of the detector to avoid (default: ``15``)
         """
         
         source = self.kic
@@ -149,9 +157,12 @@ class star(object):
 
     def do_rolltest(self, g, wh):
         """
-        Test for shifts in particular orientations by differential velocity aberrations.
-        Allow for the possibility that the aperture could be shifted by up to one pixel
-        as judged by the observed scatter
+        Test for shifts in the local positions of stars in each  epoch due to differential velocity aberration.
+        This is called by other functions in the development of light curves and shouldn't ever need to be called
+        by the user. 
+        
+        Returns: 
+            ndarray: An array of the best pixel shifts in x and y to account for differential velocity aberration.
         """
         stdval_b = 1.0
         best = np.zeros(2)
@@ -180,12 +191,33 @@ class star(object):
 
         
     
-    def find_other_sources(self, plot_flag = False, edge_lim = 0.015, min_val = 5000, 
+    def find_other_sources(self,  edge_lim = 0.015, min_val = 5000, 
                           ntargets = 250, extend_region_size=3, remove_excess=4,
-                          plot_window=15):
+                          plot_flag = False, plot_window=15):
         """
         Identify apertures for all sources on the postcard, both for the 
         target and potential reference stars
+        
+        Args: 
+            edge_lim: The initial limit for the creation of apertures. The aperture will be a region of
+                contiguous pixels with flux values larger than the product of ``edge_lim`` and the brightest
+                pixel value for this star, as long as that product is larger than ``min_val`` (default: ``0.015``)
+            min_val: Threshold for the minimum flux value in the ``integrated_postcard`` for a pixel to be included 
+                in the default apertures (default: ``5000``)
+            ntargets: The maximum number of potential reference stars to be included in the analysis (default: ``250``)
+            extend_region_size: After the initial apertures are generated, they will be optionally extended an
+                additional number of pixels following this flag. Safe practice for reasonable apertures is to 
+                leave ``min_val`` at a value well above the noise and then extend apertures via this flag until 
+                they are of suitable size (default: ``3``)
+            remove_excess: Stars with apertures that touch will be combined into a single aperture. 
+                This is done by iterating through the starlist; this flag represents the number of times the
+                list will be iterated through to delete redundant apertures (default: ``4``)
+            plot_flag: If true, a series of diagnostic plots will appear while this function runs to observe
+                apertures for the target star and other stars.
+                (default: ``False``)
+            plot_window: If ``plot_flag`` is ``True``, the size of the region to be plotted around the target star
+                to show the drawn aperture for visualization purposes only (default: ``15``)
+        
         """
         j,i = self.center
         
@@ -268,7 +300,9 @@ class star(object):
             
     def do_photometry(self):
         """
-        Actually calculate photometry
+        Does photometry and estimates uncertainties by calculating the scatter around a linear fit to the data
+        in each orientation. This function is called by other functions and generally the user will not need
+        to interact with it directly.
         """
         
         std_f = np.zeros(4)
@@ -296,7 +330,12 @@ class star(object):
         
     def generate_panel(self, img):
         """
-        Create the figure viewed in adjust_aperture
+        Creates the figure shown in ``adjust_aperture`` for visualization purposes. Called by other functions
+        and generally not called by the user directly.
+
+        Args: 
+            img: The data frame to be passed through to be plotted. A cutout of the ``integrated_postcard``
+        
         """
         plt.figure(figsize=(14,6))
         ax = plt.gca()
@@ -337,6 +376,15 @@ class star(object):
         aperture (which will be updated after closing the plot).
         Clicking on the 0th row or column will turn off all pixels in that column or row, respectively.
         Will iterate continuously until the figure is closed without updating any pixels.
+        
+
+        Args: 
+            image_region: The size of the region around the target star to be plotted. Images will be a square 
+                with side length ``image_region`` (default: ``15``)
+            ignore_bright: The number of brightest stars to be ignored in the determination of the flux from 
+                reference stars. If there is reason to believe (for example) that saturated stars may behave
+                differently than the target star, they can be avoided with this flag (default: ``0``)
+        
         """
         self.ignore_bright = ignore_bright
         self.calc_fluxes()
@@ -374,7 +422,16 @@ class star(object):
  
     def data_for_target(self, do_roll=True, ignore_bright=0):
         """
-        Determine the normalized photometry, accounting for effects shared by reference stars
+        Determine the normalized photometry, accounting for effects shared by reference stars. Does not provide
+        the opportunity to adjust the aperture
+        
+        Args: 
+            image_region: If ``True`` allow the aperture to be shifted up to one pixel in both the x and y
+                directions to account for differential velocity aberration (default: ``True``)
+            ignore_bright: The number of brightest stars to be ignored in the determination of the flux from 
+                reference stars. If there is reason to believe (for example) that saturated stars may behave
+                differently than the target star, they can be avoided with this flag (default: ``0``)
+        
         """
         self.calc_fluxes()
         self.roll_best = np.zeros((4,2))
@@ -395,6 +452,20 @@ class star(object):
         """
         Determine the suitable reference stars, and then the total flux in those stars and 
         in the target star in each epoch
+        
+        Args: 
+            min_flux: The size of the region around the target star to be plotted. Images will be a square 
+                with side length ``image_region`` (default: ``5000``)
+            outlier_iterations: The number of iterations to remove outliers from the reference star sample
+                (stars at epochs with more than ``max_outlier_obs`` observations more than ``outlier_limit`` standard
+                deviations from the median value for all stars after normalization) (default: ``5``)
+            max_outlier_obs: The maximum number of epochs at which a star is allowed to be more than ``outlier_limit``
+                standard deviations from the median value for all stars before it is removed as a suitable
+                reference star (default: ``4``)
+            outlier_limit: The level of deviation (measured in standard deviations) which a target is allowed
+                to be discrepant from the median. If it is this discrepant at more than ``max_outlier_obs``
+                epochs, it is removed from consideration (default: ``1.7``)
+        
         """
         
         jj, ii = self.center
@@ -416,7 +487,7 @@ class star(object):
             tar_vals[:,i-2-self.ignore_bright] = tval #/ np.median(tval)
             
         for i in xrange(len(self.obs_filenames)):
-            if np.max(tar_vals[i]) < 5000:
+            if np.max(tar_vals[i]) < min_flux:
                 tar_vals[self.qs == self.qs[i]] = 0.0
 
         all_tar = np.zeros((len(self.times), int(np.max(self.targets)-self.ignore_bright)))
@@ -454,7 +525,8 @@ class star(object):
         
     def calc_centroids(self):
         """
-        Identify the centroid positions for the target star at all epochs
+        Identify the centroid positions for the target star at all epochs. Useful for verifying that there is
+        no correlation between flux and position, as might be expected for high proper motion stars.
         """
         self.cm = np.zeros((len(self.postcard), 2))
         for i in xrange(len(self.postcard)):
@@ -465,7 +537,9 @@ class star(object):
     def define_spotsignal(self):
         """
         Identify the "expected" flux value at the time of each observation based on the 
-        Kepler long-cadence data.
+        Kepler long-cadence data, to ensure variations observed are not the effects of a single
+        large starspot. Only works if the target star was targeted for long or short cadence
+        observations during the primary mission.
         """
         client = kplr.API()
         star = client.star(self.kic)

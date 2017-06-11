@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &#8212; f3 1.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="The Star object" href="photometry.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This tutorial is based on an IPython notebook that can be
+downloaded <a class="reference external" href="https://github.com/benmontet/f3/blob/master/demo.ipynb">here</a>.</p>
+</div>
+<div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>For this tutorial, we will do photometry on KIC 8462852, sometimes called &#8220;Tabby&#8217;s Star&#8221; or
+&#8220;Boyajian&#8217;s Star.&#8221; We&#8217;ll see if we can reproduce the long-term dimming detected by
+Montet and Simon (2016, ApJL, 830, 39; arXiv:1608.01316), shown below</p>
+<img alt="_images/f1.jpg" src="_images/f1.jpg" />
+<p>The FFIs here are represented by the points labeled with green squares, black circles, red diamonds,
+and blue triangles, corresponding to the four different orientations of the Kepler spacecraft during
+its data-collecting primary mission.</p>
+<p>The first thing we&#8217;ll do (after importing the module, of course) is instantiate the f3 &#8220;star&#8221; class.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">f3</span> <span class="k">import</span> <span class="n">photometry</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">photometry</span><span class="o">.</span><span class="n">star</span><span class="p">(</span><span class="mi">8462852</span><span class="p">,</span> <span class="n">ffi_dir</span><span class="o">=</span><span class="s1">&#39;../kepler_ffis/&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We&#8217;ve created an object called target, defined our target based on its KIC, and pointed the object
+to the directory where we store our Full Frame Images. By default, f3 will look for the FFIs in the
+&#8220;ffidata&#8221; subdirectory of your working directory, so if they&#8217;re already there, you don&#8217;t need to
+pass through this information.</p>
+<p>&#8220;target&#8221; has various data and methods attached to it. At any time, we can find a list of those</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="nb">dir</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;__class__&#39;</span><span class="p">,</span> <span class="s1">&#39;__delattr__&#39;</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">,</span> <span class="s1">&#39;__doc__&#39;</span><span class="p">,</span> <span class="s1">&#39;__format__&#39;</span><span class="p">,</span> <span class="s1">&#39;__getattribute__&#39;</span><span class="p">,</span> <span class="s1">&#39;__hash__&#39;</span><span class="p">,</span> <span class="s1">&#39;__init__&#39;</span><span class="p">,</span> <span class="s1">&#39;__module__&#39;</span><span class="p">,</span> <span class="s1">&#39;__new__&#39;</span><span class="p">,</span> <span class="s1">&#39;__reduce__&#39;</span><span class="p">,</span> <span class="s1">&#39;__reduce_ex__&#39;</span><span class="p">,</span> <span class="s1">&#39;__repr__&#39;</span><span class="p">,</span> <span class="s1">&#39;__setattr__&#39;</span><span class="p">,</span> <span class="s1">&#39;__sizeof__&#39;</span><span class="p">,</span> <span class="s1">&#39;__str__&#39;</span><span class="p">,</span> <span class="s1">&#39;__subclasshook__&#39;</span><span class="p">,</span> <span class="s1">&#39;__weakref__&#39;</span><span class="p">,</span> <span class="s1">&#39;adjust_aperture&#39;</span><span class="p">,</span> <span class="s1">&#39;calc_centroids&#39;</span><span class="p">,</span> <span class="s1">&#39;calc_fluxes&#39;</span><span class="p">,</span> <span class="s1">&#39;data_for_target&#39;</span><span class="p">,</span> <span class="s1">&#39;define_spotsignal&#39;</span><span class="p">,</span> <span class="s1">&#39;do_photometry&#39;</span><span class="p">,</span> <span class="s1">&#39;do_rolltest&#39;</span><span class="p">,</span> <span class="s1">&#39;ffi_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;find_other_sources&#39;</span><span class="p">,</span> <span class="s1">&#39;generate_panel&#39;</span><span class="p">,</span> <span class="s1">&#39;kic&#39;</span><span class="p">,</span> <span class="s1">&#39;make_postcard&#39;</span><span class="p">,</span> <span class="s1">&#39;mini_lc&#39;</span><span class="p">,</span> <span class="s1">&#39;obs_filenames&#39;</span><span class="p">,</span> <span class="s1">&#39;onclick&#39;</span><span class="p">,</span> <span class="s1">&#39;qs&#39;</span><span class="p">,</span> <span class="s1">&#39;times&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>You&#8217;ll see some python defaults, some info we&#8217;ve supplied (for example, <code class="docutils literal"><span class="pre">target.kic</span></code> is equal to <code class="docutils literal"><span class="pre">8462852</span></code>), and some functions we
+will shortly run.</p>
+<p>Let&#8217;s try one of these. We&#8217;ll make a postcard region of data (which is bigger than a traditional Kepler postage stamp)</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">target</span><span class="o">.</span><span class="n">make_postcard</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The step above takes all the FFIs and locates a small region centered on the target. It takes three optional arguments.
+npix is the size of the square postcard region. shape=(1070,1132) is the size of the FFIs, which can be changed if
+you&#8217;re adapting the code to something other than Kepler FFIs (such as TESS data). buffer_size avoids the outermost
+pixels on the detector, so that each target should have its entire PSF on the detector.</p>
+<p>If you run <code class="docutils literal"><span class="pre">dir(target)</span></code>, you&#8217;ll now see additional data: <code class="docutils literal"><span class="pre">target.postcard</span></code> and <code class="docutils literal"><span class="pre">target.integrated</span> <span class="pre">postcard</span></code>,
+which <code class="docutils literal"><span class="pre">np.shape</span></code> will show you have shapes <code class="docutils literal"><span class="pre">(52,</span> <span class="pre">300,</span> <span class="pre">300)</span></code> and <code class="docutils literal"><span class="pre">(300,</span> <span class="pre">300)</span></code>&#8212;this is the postcard region
+and the same region summed over all observations and collapsed into 2d, representing effectively a 26 hour integration
+with Kepler.</p>
+<p>Now that we have our postcard, let&#8217;s find all the sources on it.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">target</span><span class="o">.</span><span class="n">find_other_sources</span><span class="p">(</span><span class="n">plot_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This step will draw apertures around the target star and up to <code class="docutils literal"><span class="pre">ntargets</span></code> additional targets on the same postcard.
+It will then remove apertures that touch the border of the postcard and combine apertures that touch into one target,
+treating those stars as a single object for the rest of the procedure.</p>
+<p>The <code class="docutils literal"><span class="pre">plot_flag</span></code> argument will show a stacked plot of the postcard images, then a plot of all apertures for all
+targets, then a plot of the default aperture for the primary target, and finally data for the entire postcard,
+with apertures for all targets highlighted over the data, as shown below.</p>
+<img alt="_images/f2.png" src="_images/f2.png" />
+<img alt="_images/f3.png" src="_images/f3.png" />
+<img alt="_images/f4.png" src="_images/f4.png" />
+<img alt="_images/f5.png" src="_images/f5.png" />
+<p>Now that we know where our target star is and where our reference stars are, it&#8217;s time to do photometry!
+Perhaps the initial aperture isn&#8217;t appropriate, because it contians another star or doesn&#8217;t capture the entire PSF,
+for example. In this case, we can use <code class="docutils literal"><span class="pre">adjust_aperture</span></code> to adjust the aperture. It will open up a window showing
+the aperture (and underlying data) and the current light curve for the target star. By clicking on individual pixels,
+you can include or exclude them from the aperture. Closing the panel will then cause the photometry pipeline to re-run,
+and you can see how the light curve has changed from including/excluding those pixels. This will repeat until the
+image is closed without any changes to the aperture.</p>
+<p>Clicking on the zeroth row/column (on the top or left) will cause all pixels in that column/row (respectively) to be
+turned off. Re-running <code class="docutils literal"><span class="pre">find_other_sources</span></code> will restart this procedure, giving you back the default aperture.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">target</span><span class="o">.</span><span class="n">adjust_aperture</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/f6.png" src="_images/f6.png" />
+<p>The times of observations will then be found in <code class="docutils literal"><span class="pre">target.times</span></code>, and the flux values in <code class="docutils literal"><span class="pre">target.obs_flux</span></code>.
+You&#8217;ll also find a few other new variables in there, which include the raw flux for the target star and for the
+reference stars, before using the reference stars as calibrators.
+Everything should slowly be decreasing in that case, which I think is due to degradation of the detector in the
+harshness of space. <code class="docutils literal"><span class="pre">target.flux_uncert</span></code> will give you an estimate of the uncertainties from fitting a line to the
+data and estimating the scatter around that line.</p>
+<p>Instead of <code class="docutils literal"><span class="pre">adjust_aperture</span></code> we could run <code class="docutils literal"><span class="pre">data_for_target</span></code> instead, which produces the same results without
+the abilities for the user to view and adjust the aperture.</p>
+<p>Let&#8217;s see how it looks!</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="n">fmt</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ko&#39;</span><span class="p">,</span> <span class="s1">&#39;rD&#39;</span><span class="p">,</span> <span class="s1">&#39;b^&#39;</span><span class="p">,</span> <span class="s1">&#39;gs&#39;</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">target</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">yerr</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">flux_uncert</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</pre></div>
+</div>
+<img alt="_images/f7.png" src="_images/f7.png" />
+<p>This looks like the result from Montet and Simon!
+The error bars are overestimated in this case&#8212;they represent the residuals to a linear fit to the data,
+which is clearly inappropriate for this star. Dan Foreman-Mackey&#8217;s <code class="docutils literal"><span class="pre">kepcal</span></code> package will take in data in
+the format <code class="docutils literal"><span class="pre">f3</span></code> produces and can be used to infer uncertainties from the data itself, but this has yet
+to be incorporated into <code class="docutils literal"><span class="pre">f3</span></code> itself. Stay tuned!</p>
+<p>With this, you can produce simple photometry for all stars in the Kepler field. Feel free to play around with it,
+try some of the different flags available in each of the steps, and see where <code class="docutils literal"><span class="pre">f3</span></code> succeeds and where it struggles
+(namely, faint stars in crowded fields, when the star&#8217;s PSF is encroached on by another star of equal or greater
+brightness). If you have any ideas on improvement, feel free to fork the repository and create a pull request.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="photometry.html">The Star object</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="photometry.html" title="previous chapter">The Star object</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Benjamin Montet.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/tutorial.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

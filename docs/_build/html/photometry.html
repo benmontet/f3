@@ -1,0 +1,317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Star object &#8212; f3 1.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorial" href="tutorial.html" />
+    <link rel="prev" title="Installation" href="install.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="the-star-object">
+<h1>The Star object<a class="headerlink" href="#the-star-object" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="photometry.star">
+<em class="property">class </em><code class="descclassname">photometry.</code><code class="descname">star</code><span class="sig-paren">(</span><em>kic</em>, <em>ffi_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main interface to the f3 photometry package</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kic</strong> &#8211; The Kepler Input Catalog identifier for the target for which you wish to do photometry</li>
+<li><strong>ffi_dir</strong> &#8211; The directory relative to your current working directory where your
+full frame images are stored (default: <code class="docutils literal"><span class="pre">ffidata/</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="photometry.star.adjust_aperture">
+<code class="descname">adjust_aperture</code><span class="sig-paren">(</span><em>image_region=15</em>, <em>ignore_bright=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.adjust_aperture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.adjust_aperture" title="Permalink to this definition">¶</a></dt>
+<dd><p>Develop a panel showing the current aperture and the light curve as judged from that aperture.
+Clicking on individual pixels on the aperture will toggle those pixels on or off into the
+aperture (which will be updated after closing the plot).
+Clicking on the 0th row or column will turn off all pixels in that column or row, respectively.
+Will iterate continuously until the figure is closed without updating any pixels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>image_region</strong> &#8211; The size of the region around the target star to be plotted. Images will be a square
+with side length <code class="docutils literal"><span class="pre">image_region</span></code> (default: <code class="docutils literal"><span class="pre">15</span></code>)</li>
+<li><strong>ignore_bright</strong> &#8211; The number of brightest stars to be ignored in the determination of the flux from
+reference stars. If there is reason to believe (for example) that saturated stars may behave
+differently than the target star, they can be avoided with this flag (default: <code class="docutils literal"><span class="pre">0</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.calc_centroids">
+<code class="descname">calc_centroids</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.calc_centroids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.calc_centroids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identify the centroid positions for the target star at all epochs. Useful for verifying that there is
+no correlation between flux and position, as might be expected for high proper motion stars.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.calc_fluxes">
+<code class="descname">calc_fluxes</code><span class="sig-paren">(</span><em>min_flux=5000</em>, <em>outlier_iterations=5</em>, <em>max_outlier_obs=4</em>, <em>outlier_limit=1.7</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.calc_fluxes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.calc_fluxes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the suitable reference stars, and then the total flux in those stars and
+in the target star in each epoch</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>min_flux</strong> &#8211; The size of the region around the target star to be plotted. Images will be a square
+with side length <code class="docutils literal"><span class="pre">image_region</span></code> (default: <code class="docutils literal"><span class="pre">5000</span></code>)</li>
+<li><strong>outlier_iterations</strong> &#8211; The number of iterations to remove outliers from the reference star sample
+(stars at epochs with more than <code class="docutils literal"><span class="pre">max_outlier_obs</span></code> observations more than <code class="docutils literal"><span class="pre">outlier_limit</span></code> standard
+deviations from the median value for all stars after normalization) (default: <code class="docutils literal"><span class="pre">5</span></code>)</li>
+<li><strong>max_outlier_obs</strong> &#8211; The maximum number of epochs at which a star is allowed to be more than <code class="docutils literal"><span class="pre">outlier_limit</span></code>
+standard deviations from the median value for all stars before it is removed as a suitable
+reference star (default: <code class="docutils literal"><span class="pre">4</span></code>)</li>
+<li><strong>outlier_limit</strong> &#8211; The level of deviation (measured in standard deviations) which a target is allowed
+to be discrepant from the median. If it is this discrepant at more than <code class="docutils literal"><span class="pre">max_outlier_obs</span></code>
+epochs, it is removed from consideration (default: <code class="docutils literal"><span class="pre">1.7</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.data_for_target">
+<code class="descname">data_for_target</code><span class="sig-paren">(</span><em>do_roll=True</em>, <em>ignore_bright=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.data_for_target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.data_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the normalized photometry, accounting for effects shared by reference stars. Does not provide
+the opportunity to adjust the aperture</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>image_region</strong> &#8211; If <code class="docutils literal"><span class="pre">True</span></code> allow the aperture to be shifted up to one pixel in both the x and y
+directions to account for differential velocity aberration (default: <code class="docutils literal"><span class="pre">True</span></code>)</li>
+<li><strong>ignore_bright</strong> &#8211; The number of brightest stars to be ignored in the determination of the flux from
+reference stars. If there is reason to believe (for example) that saturated stars may behave
+differently than the target star, they can be avoided with this flag (default: <code class="docutils literal"><span class="pre">0</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.define_spotsignal">
+<code class="descname">define_spotsignal</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.define_spotsignal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.define_spotsignal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identify the &#8220;expected&#8221; flux value at the time of each observation based on the
+Kepler long-cadence data, to ensure variations observed are not the effects of a single
+large starspot. Only works if the target star was targeted for long or short cadence
+observations during the primary mission.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.do_photometry">
+<code class="descname">do_photometry</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.do_photometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.do_photometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does photometry and estimates uncertainties by calculating the scatter around a linear fit to the data
+in each orientation. This function is called by other functions and generally the user will not need
+to interact with it directly.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.do_rolltest">
+<code class="descname">do_rolltest</code><span class="sig-paren">(</span><em>g</em>, <em>wh</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.do_rolltest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.do_rolltest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test for shifts in the local positions of stars in each  epoch due to differential velocity aberration.
+This is called by other functions in the development of light curves and shouldn&#8217;t ever need to be called
+by the user.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An array of the best pixel shifts in x and y to account for differential velocity aberration.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.find_other_sources">
+<code class="descname">find_other_sources</code><span class="sig-paren">(</span><em>edge_lim=0.015</em>, <em>min_val=5000</em>, <em>ntargets=250</em>, <em>extend_region_size=3</em>, <em>remove_excess=4</em>, <em>plot_flag=False</em>, <em>plot_window=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.find_other_sources"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.find_other_sources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identify apertures for all sources on the postcard, both for the
+target and potential reference stars</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>edge_lim</strong> &#8211; The initial limit for the creation of apertures. The aperture will be a region of
+contiguous pixels with flux values larger than the product of <code class="docutils literal"><span class="pre">edge_lim</span></code> and the brightest
+pixel value for this star, as long as that product is larger than <code class="docutils literal"><span class="pre">min_val</span></code> (default: <code class="docutils literal"><span class="pre">0.015</span></code>)</li>
+<li><strong>min_val</strong> &#8211; Threshold for the minimum flux value in the <code class="docutils literal"><span class="pre">integrated_postcard</span></code> for a pixel to be included
+in the default apertures (default: <code class="docutils literal"><span class="pre">5000</span></code>)</li>
+<li><strong>ntargets</strong> &#8211; The maximum number of potential reference stars to be included in the analysis (default: <code class="docutils literal"><span class="pre">250</span></code>)</li>
+<li><strong>extend_region_size</strong> &#8211; After the initial apertures are generated, they will be optionally extended an
+additional number of pixels following this flag. Safe practice for reasonable apertures is to
+leave <code class="docutils literal"><span class="pre">min_val</span></code> at a value well above the noise and then extend apertures via this flag until
+they are of suitable size (default: <code class="docutils literal"><span class="pre">3</span></code>)</li>
+<li><strong>remove_excess</strong> &#8211; Stars with apertures that touch will be combined into a single aperture.
+This is done by iterating through the starlist; this flag represents the number of times the
+list will be iterated through to delete redundant apertures (default: <code class="docutils literal"><span class="pre">4</span></code>)</li>
+<li><strong>plot_flag</strong> &#8211; If true, a series of diagnostic plots will appear while this function runs to observe
+apertures for the target star and other stars.
+(default: <code class="docutils literal"><span class="pre">False</span></code>)</li>
+<li><strong>plot_window</strong> &#8211; If <code class="docutils literal"><span class="pre">plot_flag</span></code> is <code class="docutils literal"><span class="pre">True</span></code>, the size of the region to be plotted around the target star
+to show the drawn aperture for visualization purposes only (default: <code class="docutils literal"><span class="pre">15</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.generate_panel">
+<code class="descname">generate_panel</code><span class="sig-paren">(</span><em>img</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.generate_panel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.generate_panel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the figure shown in <code class="docutils literal"><span class="pre">adjust_aperture</span></code> for visualization purposes. Called by other functions
+and generally not called by the user directly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>img</strong> &#8211; The data frame to be passed through to be plotted. A cutout of the <code class="docutils literal"><span class="pre">integrated_postcard</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="photometry.star.make_postcard">
+<code class="descname">make_postcard</code><span class="sig-paren">(</span><em>npix=300</em>, <em>shape=(1070</em>, <em>1132)</em>, <em>buffer_size=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/photometry.html#star.make_postcard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#photometry.star.make_postcard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Develop a &#8220;postcard&#8221; region around the target star.
+Other stars in this postcard will be used as possible reference stars.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>npix</strong> &#8211; The size of the postcard region. The region will be a square with sides npix pixels
+(default: <code class="docutils literal"><span class="pre">300</span></code>)</li>
+<li><strong>shape</strong> &#8211; The size of each individual image. For Kepler/K2 FFIs this should never need to be
+changed from the default, but will be different for e.g. TESS FFIs (default: <code class="docutils literal"><span class="pre">(1070,</span> <span class="pre">1132)</span></code>)</li>
+<li><strong>buffer_size</strong> &#8211; The number of pixels at the edge of the detector to avoid (default: <code class="docutils literal"><span class="pre">15</span></code>)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Star object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="install.html" title="previous chapter">Installation</a></li>
+      <li>Next: <a href="tutorial.html" title="next chapter">Tutorial</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/photometry.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Benjamin Montet.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/photometry.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

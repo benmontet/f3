@@ -1,0 +1,601 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>f3.photometry &#8212; f3 1.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for f3.photometry</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="k">as</span> <span class="nn">p</span>
+<span class="kn">import</span> <span class="nn">kplr</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.measurements</span> <span class="k">import</span> <span class="n">label</span>
+<span class="kn">import</span> <span class="nn">mahotas</span> <span class="k">as</span> <span class="nn">mh</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.measurements</span> <span class="k">import</span> <span class="n">center_of_mass</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">splrep</span><span class="p">,</span> <span class="n">splev</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">files</span>
+<span class="kn">import</span> <span class="nn">matplotlib.image</span> <span class="k">as</span> <span class="nn">mpimg</span>
+
+<span class="n">fmt</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ko&#39;</span><span class="p">,</span> <span class="s1">&#39;rD&#39;</span><span class="p">,</span> <span class="s1">&#39;b^&#39;</span><span class="p">,</span> <span class="s1">&#39;gs&#39;</span><span class="p">]</span>
+
+
+
+
+<div class="viewcode-block" id="star"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star">[docs]</a><span class="k">class</span> <span class="nc">star</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Routines to perform photometry on the Kepler full frame images</span>
+<span class="sd">    </span>
+<span class="sd">    Ben Montet, 2017</span>
+<span class="sd">    https://github.com/benmontet/f3</span>
+<span class="sd">    See repository for a tutorial</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kic</span><span class="p">,</span> <span class="n">ffi_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_filenames</span> <span class="o">=</span> <span class="n">files</span><span class="o">.</span><span class="n">ffilist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kic</span> <span class="o">=</span> <span class="n">kic</span>
+        <span class="k">if</span> <span class="n">ffi_dir</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ffi_dir</span> <span class="o">=</span> <span class="s1">&#39;ffidata/&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ffi_dir</span> <span class="o">=</span> <span class="n">ffi_dir</span>
+        
+        <span class="nb">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">obs_info</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="s1">&#39;../obs_info.txt&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">obs_info</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">obs_info</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="s1">&#39;obs_info.txt&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">obs_info</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+ 
+         
+<div class="viewcode-block" id="star.make_postcard"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.make_postcard">[docs]</a>    <span class="k">def</span> <span class="nf">make_postcard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1070</span><span class="p">,</span> <span class="mi">1132</span><span class="p">),</span> <span class="n">buffer_size</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Develop a &quot;postcard&quot; region, npix by npix in size, around the target star.</span>
+<span class="sd">        Other stars in this postcard will be used as possible reference stars.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kic</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">kplr</span><span class="o">.</span><span class="n">API</span><span class="p">()</span>
+        <span class="n">targ</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        
+        <span class="n">channel</span> <span class="o">=</span> <span class="p">[</span><span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Channel_0&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Channel_1&#39;</span><span class="p">],</span> 
+                    <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Channel_2&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Channel_3&#39;</span><span class="p">]]</span>
+
+        <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Column_0&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Column_1&#39;</span><span class="p">],</span> 
+                    <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Column_2&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Column_3&#39;</span><span class="p">]]</span> 
+
+        <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Row_0&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Row_1&#39;</span><span class="p">],</span> 
+                    <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Row_2&#39;</span><span class="p">],</span> <span class="n">targ</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Row_3&#39;</span><span class="p">]]</span> 
+        
+
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Star not on detector all quarters!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">col</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Star not on detector all quarters!&#39;</span><span class="p">)</span>
+            
+        <span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+        
+        
+        <span class="c1"># If star close to edge, shift frame so that we have the full npix by npix</span>
+        <span class="c1"># In this case, postcard will not be centered on target star</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">jump</span> <span class="o">=</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="n">buffer_size</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="n">jump</span>
+            <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">jump</span>
+            
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">jump</span> <span class="o">=</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">+</span> <span class="n">buffer_size</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="n">jump</span>
+            <span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">jump</span>
+            
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">jump</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">-</span> <span class="n">buffer_size</span>
+            <span class="n">row</span> <span class="o">+=</span> <span class="n">jump</span>
+            <span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">jump</span>
+            
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">jump</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">-</span> <span class="n">buffer_size</span>
+            <span class="n">col</span> <span class="o">+=</span> <span class="n">jump</span>
+            <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">jump</span>
+        
+        <span class="n">fin_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">),</span> <span class="n">npix</span><span class="p">,</span> <span class="n">npix</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">icount</span><span class="p">,</span> <span class="n">iname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_filenames</span><span class="p">):</span> 
+            <span class="n">a</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ffi_dir</span><span class="o">+</span><span class="n">iname</span><span class="p">)</span>
+
+                        
+            <span class="n">quarter</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;quarter&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">quarter</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">season</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">season</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">quarter</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span>
+
+            <span class="c1">#season_arr[icount] = season</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">channel</span><span class="p">[</span><span class="n">season</span><span class="p">]]</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">img</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+            
+            
+            <span class="n">ymin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">season</span><span class="p">])</span><span class="o">-</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">season</span><span class="p">])</span><span class="o">+</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="n">season</span><span class="p">])</span><span class="o">-</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">col</span><span class="p">[</span><span class="n">season</span><span class="p">])</span><span class="o">+</span><span class="n">npix</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
+
+            <span class="n">pimg</span> <span class="o">=</span> <span class="n">img</span><span class="p">[</span><span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span><span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+            <span class="n">fin_arr</span><span class="p">[</span><span class="n">icount</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">pimg</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">postcard</span> <span class="o">=</span> <span class="n">fin_arr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span></div>
+        
+    
+<div class="viewcode-block" id="star.onclick"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.onclick">[docs]</a>    <span class="k">def</span> <span class="nf">onclick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">ix</span><span class="p">,</span> <span class="n">iy</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">ydata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">xdata</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
+            <span class="n">ix</span><span class="p">,</span> <span class="n">iy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">xdata</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ydata</span><span class="p">))</span>
+            <span class="k">global</span> <span class="n">coords</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ix</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iy</span><span class="p">)</span></div>
+            
+    
+<div class="viewcode-block" id="star.mini_lc"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.mini_lc">[docs]</a>    <span class="k">def</span> <span class="nf">mini_lc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">wh</span><span class="p">,</span> <span class="n">factr</span><span class="p">):</span>
+        <span class="n">data_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">,</span> <span class="n">s1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">data_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">data_new</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">numer_pix</span> <span class="o">=</span> <span class="n">data_new</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numer_pix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">numer</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_flux</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+        <span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">[</span><span class="n">wh</span><span class="p">]])</span>
+        <span class="k">return</span> <span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="star.do_rolltest"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.do_rolltest">[docs]</a>    <span class="k">def</span> <span class="nf">do_rolltest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">wh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test for shifts in particular orientations by differential velocity aberrations.</span>
+<span class="sd">        Allow for the possibility that the aperture could be shifted by up to one pixel</span>
+<span class="sd">        as judged by the observed scatter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stdval_b</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">best</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">factr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_flux</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">s1</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">s2</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]):</span>
+                <span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini_lc</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">wh</span><span class="p">,</span> <span class="n">factr</span><span class="p">)</span>
+
+                <span class="n">stdval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ij</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+                    <span class="n">thisyear</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">==</span> <span class="n">ij</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">thisyear</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="n">stdval</span><span class="p">[</span><span class="n">ij</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">thisyear</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">thisyear</span><span class="p">]))</span>
+
+                <span class="n">stest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">stdval</span><span class="p">[</span><span class="n">stdval</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">])</span>
+                <span class="n">fitline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">],</span> <span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">stest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">factr</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">fitline</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">]</span><span class="o">+</span><span class="n">fitline</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="mf">0.0001</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">stest</span> <span class="o">&lt;</span> <span class="n">stdval_b</span><span class="p">:</span>
+                    <span class="n">best</span> <span class="o">=</span> <span class="p">[</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">]</span>
+
+                    <span class="n">stdval_b</span> <span class="o">=</span> <span class="n">stest</span> <span class="o">+</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">best</span></div>
+
+        
+    
+<div class="viewcode-block" id="star.find_other_sources"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.find_other_sources">[docs]</a>    <span class="k">def</span> <span class="nf">find_other_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_flag</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">edge_lim</span> <span class="o">=</span> <span class="mf">0.015</span><span class="p">,</span> <span class="n">min_val</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> 
+                          <span class="n">ntargets</span> <span class="o">=</span> <span class="mi">250</span><span class="p">,</span> <span class="n">extend_region_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">remove_excess</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                          <span class="n">plot_window</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify apertures for all sources on the postcard, both for the </span>
+<span class="sd">        target and potential reference stars</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">j</span><span class="p">,</span><span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        
+        <span class="n">region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span> <span class="o">+</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">plot_flag</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">ff</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> 
+                            <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="mf">99.6</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ff</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">)</span>
+        <span class="n">sizeimg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">targets</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">jj</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">0</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">0</span>
+        
+        <span class="n">edge</span> <span class="o">=</span> <span class="n">edge_lim</span>
+        
+        <span class="n">lim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">edge</span><span class="p">)</span>
+        
+        <span class="n">maxpt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">,</span> <span class="mi">94</span><span class="p">)</span>
+        
+        <span class="n">bin_img</span> <span class="o">=</span> <span class="p">(</span><span class="n">region</span> <span class="o">&gt;</span> <span class="n">lim</span><span class="p">)</span>
+        <span class="n">lab_img</span><span class="p">,</span> <span class="n">n_features</span> <span class="o">=</span> <span class="n">label</span><span class="p">(</span><span class="n">bin_img</span><span class="p">)</span>
+        
+        <span class="n">key_targ</span> <span class="o">=</span> <span class="p">(</span><span class="n">lab_img</span> <span class="o">==</span> <span class="p">(</span><span class="n">lab_img</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">key_targ</span><span class="p">)</span>
+    
+        <span class="n">targets</span><span class="p">[</span><span class="n">key_targ</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">region</span><span class="p">[</span><span class="n">key_targ</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        
+
+        
+        <span class="n">lim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ntargets</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">peaks</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ntargets</span><span class="p">):</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+            <span class="n">j</span><span class="p">,</span><span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">region</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">lim</span><span class="p">[</span><span class="n">peaks</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxpt</span><span class="p">,</span> <span class="n">edge</span><span class="o">*</span><span class="n">region</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">])</span>
+
+
+            <span class="n">bin_img</span> <span class="o">=</span> <span class="p">(</span><span class="n">region</span> <span class="o">&gt;=</span> <span class="n">lim</span><span class="p">[</span><span class="n">peaks</span><span class="p">])</span>
+            <span class="n">lab_img</span><span class="p">,</span> <span class="n">n_features</span> <span class="o">=</span> <span class="n">label</span><span class="p">(</span><span class="n">bin_img</span><span class="p">)</span>
+
+            <span class="n">key_targ</span> <span class="o">=</span> <span class="p">(</span><span class="n">lab_img</span> <span class="o">==</span> <span class="p">(</span><span class="n">lab_img</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">targets</span><span class="p">[</span><span class="n">key_targ</span><span class="p">]</span> <span class="o">=</span> <span class="n">peaks</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">region</span><span class="p">[</span><span class="n">key_targ</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        
+        <span class="n">lab_img</span><span class="p">,</span> <span class="n">n_features</span> <span class="o">=</span> <span class="n">label</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ntargets</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">extend_region_size</span><span class="p">):</span>
+                <span class="n">border</span><span class="o">=</span> <span class="n">mh</span><span class="o">.</span><span class="n">labeled</span><span class="o">.</span><span class="n">border</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+
+                <span class="n">targets</span><span class="p">[</span><span class="n">border</span><span class="o">*</span><span class="p">(</span><span class="n">region</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="n">lim</span><span class="p">[</span><span class="n">peaks</span><span class="p">])]</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">ntargets</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">ntargets</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="n">border</span> <span class="o">=</span> <span class="n">mh</span><span class="o">.</span><span class="n">labeled</span><span class="o">.</span><span class="n">border</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">border</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">targets</span><span class="p">[</span><span class="n">targets</span> <span class="o">==</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+    
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">mh</span><span class="o">.</span><span class="n">labeled</span><span class="o">.</span><span class="n">remove_bordering</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">remove_excess</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">ntargets</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">[</span><span class="n">targets</span> <span class="o">==</span> <span class="n">i</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+                    <span class="n">targets</span><span class="p">[</span><span class="n">targets</span> <span class="o">&gt;</span> <span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span>
+        
+        <span class="k">if</span> <span class="n">plot_flag</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(((</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span> <span class="o">+</span> <span class="p">(</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">100000</span><span class="p">)</span>
+                       <span class="p">[</span><span class="n">jj</span><span class="o">-</span><span class="n">plot_window</span><span class="p">:</span><span class="n">jj</span><span class="o">+</span><span class="n">plot_window</span><span class="p">,</span><span class="n">ii</span><span class="o">-</span><span class="n">plot_window</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">plot_window</span><span class="p">],</span> 
+                       <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">,</span> <span class="mf">99.6</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">targets</span><span class="o">/</span><span class="mf">100.0</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">targets</span><span class="o">/</span><span class="mf">500.0</span><span class="p">)</span><span class="o">*</span><span class="mi">3500000</span><span class="p">),</span> 
+                       <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">integrated_postcard</span><span class="p">,</span> <span class="mf">99.99</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+            
+<div class="viewcode-block" id="star.do_photometry"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.do_photometry">[docs]</a>    <span class="k">def</span> <span class="nf">do_photometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Actually calculate photometry</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">std_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">data_save</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_flux</span><span class="p">)</span>
+
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">wh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">54947</span><span class="p">)</span>
+
+            <span class="n">data_save</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">data_save</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">data_save</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">target_flux_pixels</span> <span class="o">=</span> <span class="n">data_save</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_flux_pixels</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_flux</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_flux</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">[</span><span class="n">wh</span><span class="p">]])</span>
+            
+            <span class="n">fitline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">std_f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">fitline</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">][</span><span class="n">wh</span><span class="p">]</span><span class="o">+</span><span class="n">fitline</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="mf">0.001</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">flux_uncert</span> <span class="o">=</span> <span class="n">std_f</span></div>
+        
+<div class="viewcode-block" id="star.generate_panel"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.generate_panel">[docs]</a>    <span class="k">def</span> <span class="nf">generate_panel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create the figure viewed in adjust_aperture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+        
+        
+        <span class="n">data_save</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">wh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">54947</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_rolltest</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">wh</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_photometry</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_flux</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_uncert</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Flux&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+ 
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+        <span class="n">implot</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">98000</span><span class="o">*</span><span class="mi">52</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">104000</span><span class="o">*</span><span class="mi">52</span><span class="p">)</span>
+        <span class="n">cid</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">onclick</span><span class="p">)</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+            
+        
+<div class="viewcode-block" id="star.adjust_aperture"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.adjust_aperture">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_aperture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_region</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">ignore_bright</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Develop a panel showing the current aperture and the light curve as judged from that aperture.</span>
+<span class="sd">        Clicking on individual pixels on the aperture will toggle those pixels on or off into the</span>
+<span class="sd">        aperture (which will be updated after closing the plot).</span>
+<span class="sd">        Clicking on the 0th row or column will turn off all pixels in that column or row, respectively.</span>
+<span class="sd">        Will iterate continuously until the figure is closed without updating any pixels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_bright</span> <span class="o">=</span> <span class="n">ignore_bright</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calc_fluxes</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">jj</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">100000</span><span class="p">)</span>
+                     <span class="p">[:,</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">:</span><span class="n">jj</span><span class="o">+</span><span class="n">image_region</span><span class="p">,</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">image_region</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_panel</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">thiscol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="n">thiscol</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">thiscol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,:]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">,</span> <span class="n">thiscol</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordsx</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordsy</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span> <span class="o">+</span> 
+                          <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">100000</span><span class="p">)[:,</span><span class="n">jj</span><span class="o">-</span><span class="n">image_region</span><span class="p">:</span><span class="n">jj</span><span class="o">+</span><span class="n">image_region</span><span class="p">,</span><span class="n">ii</span><span class="o">-</span><span class="n">image_region</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">image_region</span><span class="p">],</span>
+                         <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_panel</span><span class="p">(</span><span class="n">img</span><span class="p">)</span></div>
+
+ 
+<div class="viewcode-block" id="star.data_for_target"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.data_for_target">[docs]</a>    <span class="k">def</span> <span class="nf">data_for_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">do_roll</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the normalized photometry, accounting for effects shared by reference stars</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calc_fluxes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">do_roll</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+                <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">wh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">54947</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">roll_best</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_rolltest</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">wh</span><span class="p">)</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_photometry</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="star.calc_fluxes"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.calc_fluxes">[docs]</a>    <span class="k">def</span> <span class="nf">calc_fluxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_flux</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">outlier_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                       <span class="n">max_outlier_obs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">outlier_limit</span><span class="o">=</span><span class="mf">1.7</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the suitable reference stars, and then the total flux in those stars and </span>
+<span class="sd">        in the target star in each epoch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">jj</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+        
+
+        
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">))</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">))</span>
+        <span class="n">factr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">))</span>
+        
+        <span class="n">numer_pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numer_pix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">tar_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_bright</span><span class="p">)))</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">2</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_bright</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)):</span>
+            <span class="n">tval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">[:,</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">==</span> <span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1">#denom += tval/np.median(tval)</span>
+            <span class="n">tar_vals</span><span class="p">[:,</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_bright</span><span class="p">]</span> <span class="o">=</span> <span class="n">tval</span> <span class="c1">#/ np.median(tval)</span>
+            
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_filenames</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">5000</span><span class="p">:</span>
+                <span class="n">tar_vals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">all_tar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_bright</span><span class="p">)))</span>
+        <span class="n">all_tar</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numer</span>
+        <span class="n">all_tar</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">tar_vals</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">photometry_array</span> <span class="o">=</span> <span class="n">all_tar</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+                <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span> <span class="o">==</span> <span class="n">j</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  
+                <span class="n">tar_vals</span><span class="p">[</span><span class="n">g</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">/=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[</span><span class="n">g</span><span class="p">,</span><span class="n">i</span><span class="p">])</span><span class="o">+</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">15</span><span class="p">)</span>
+                
+
+    
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">outlier_iterations</span><span class="p">):</span>
+            <span class="n">nonzeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">med</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[:,</span><span class="n">nonzeros</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[:,</span><span class="n">nonzeros</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">tar_vals_old</span> <span class="o">=</span> <span class="n">tar_vals</span> <span class="o">+</span> <span class="mf">0.0</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">med</span><span class="o">-</span><span class="n">tar_vals</span><span class="p">[:,</span><span class="n">k</span><span class="p">])</span><span class="o">/</span><span class="n">std</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">outlier_limit</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">max_outlier_obs</span><span class="p">:</span>
+                    <span class="n">tar_vals</span><span class="p">[:,</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">tar_vals</span> <span class="o">=</span> <span class="n">tar_vals_old</span> <span class="o">+</span> <span class="mf">0.0</span>
+
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tar_vals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_flux_pixels</span> <span class="o">=</span> <span class="n">numer_pix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_flux</span> <span class="o">=</span> <span class="n">denom</span></div>
+        
+<div class="viewcode-block" id="star.calc_centroids"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.calc_centroids">[docs]</a>    <span class="k">def</span> <span class="nf">calc_centroids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify the centroid positions for the target star at all epochs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">),</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">)):</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postcard</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">target</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span><span class="n">target</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="star.define_spotsignal"><a class="viewcode-back" href="../../source/f3.html#f3.photometry.star.define_spotsignal">[docs]</a>    <span class="k">def</span> <span class="nf">define_spotsignal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify the &quot;expected&quot; flux value at the time of each observation based on the </span>
+<span class="sd">        Kepler long-cadence data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">kplr</span><span class="o">.</span><span class="n">API</span><span class="p">()</span>
+        <span class="n">star</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">star</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kic</span><span class="p">)</span>
+
+        <span class="n">lcs</span> <span class="o">=</span> <span class="n">star</span><span class="o">.</span><span class="n">get_light_curves</span><span class="p">(</span><span class="n">short_cadence</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">time</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ferr</span><span class="p">,</span> <span class="n">qual</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">lc</span> <span class="ow">in</span> <span class="n">lcs</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">lc</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">hdu_data</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdu_data</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">])</span>
+                <span class="n">flux</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdu_data</span><span class="p">[</span><span class="s2">&quot;pdcsap_flux&quot;</span><span class="p">])</span>
+                <span class="n">ferr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdu_data</span><span class="p">[</span><span class="s2">&quot;pdcsap_flux_err&quot;</span><span class="p">])</span>
+                <span class="n">qual</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdu_data</span><span class="p">[</span><span class="s2">&quot;sap_quality&quot;</span><span class="p">])</span>
+            <span class="n">tout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">fout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">eout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="p">)):</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">qual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">qual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">ferr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">qual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+
+                <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+
+                <span class="n">e</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="n">f</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="n">tout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tout</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="mi">50</span><span class="p">:]</span><span class="o">+</span><span class="mi">54833</span><span class="p">)</span>
+                <span class="n">fout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="n">f</span><span class="p">[</span><span class="mi">50</span><span class="p">:])</span>
+                <span class="n">eout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eout</span><span class="p">,</span> <span class="n">e</span><span class="p">[</span><span class="mi">50</span><span class="p">:])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">spot_signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">52</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">55000</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spot_signal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spot_signal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fout</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">tout</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">tout</span><span class="p">))]</span></div></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../photometry.html">The Star object</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Benjamin Montet.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

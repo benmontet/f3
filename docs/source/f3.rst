@@ -1,0 +1,30 @@
+f3 package
+==========
+
+Submodules
+----------
+
+f3.files module
+---------------
+
+.. automodule:: f3.files
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+f3.photometry module
+--------------------
+
+.. automodule:: f3.photometry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: f3
+    :members:
+    :undoc-members:
+    :show-inheritance:
