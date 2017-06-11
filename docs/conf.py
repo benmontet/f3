@@ -31,10 +31,11 @@ sys.path.insert(0, os.path.abspath('../f3'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.mathjax', 'sphinxcontrib.napoleon',
+    'sphinx.ext.mathjax', 'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinxcontrib.fulltoc']
+    'sphinx.ext.githubpages']
+
+html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'], }
 
 
 napoleon_google_docstring = True
