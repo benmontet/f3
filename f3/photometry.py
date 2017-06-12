@@ -433,9 +433,10 @@ class star(object):
                 differently than the target star, they can be avoided with this flag (default: ``0``)
         
         """
+        self.ignore_bright = ignore_bright
         self.calc_fluxes()
         self.roll_best = np.zeros((4,2))
-	self.ignore_bright = ignore_bright
+
         
         if do_roll == True:
             for i in xrange(4):
@@ -579,3 +580,32 @@ class star(object):
                 else:
                     self.spot_signal[i] = fout[np.abs(self.times[i] - tout) == np.min(np.abs(self.times[i] - tout))]
 
+    def model_uncert(self):
+        """
+        Estimate the photometric uncertainties on each data point following Equation A.2 of The Paper.
+        Based on the kepcal package of Dan Foreman-Mackey.
+        """
+        Y = self.photometry_array.T
+        Y /= np.median(Y, axis=1)[:, None]
+        C = np.median(Y, axis=0)
+        
+        nstars, nobs = np.shape(Y)
+        
+        Z = np.empty((nstars, 4))
+        
+        qs = self.qs.astype(int)
+        
+        for s in xrange(4):
+            Z[:, s] = np.median((Y / C)[:, qs == s], axis=1)
+
+        resid2 = (Y - Z[:, qs] * C)**2
+        z = Z[:, qs]
+        trend = z * C[None, :]
+        
+        lnS = np.log(np.median(resid2, axis=0))
+        jitter = np.log(0.1*np.median(np.abs(np.diff(Y, axis=1))))
+
+        cal_ferr = np.sqrt(np.exp(2*(jitter/trend))+z**2*np.exp(lnS)[None, :])
+        
+        self.modeled_uncert = cal_ferr
+        self.target_uncert = cal_ferr[0]

@@ -118,9 +118,24 @@ Let's see how it looks!
 
 This looks like the result from Montet and Simon! 
 The error bars are overestimated in this case---they represent the residuals to a linear fit to the data, 
-which is clearly inappropriate for this star. Dan Foreman-Mackey's ``kepcal`` package will take in data in 
-the format ``f3`` produces and can be used to infer uncertainties from the data itself, but this has yet
-to be incorporated into ``f3`` itself. Stay tuned!
+which is clearly inappropriate for this star. We can use the data to estimate the uncertainties, following
+the appendix in our paper.
+
+.. code:: python
+    
+    target.model_uncert()
+
+This will create an array called ``modeled_uncert`` which we can use as our uncertainties.
+
+.. code:: python
+
+    for i in xrange(4):
+        g = np.where(a.qs == i)[0]
+        plt.errorbar(a.times[g], a.obs_flux[g], yerr=a.target_uncert[g], fmt=fmt[i])
+        
+.. image:: f8.png
+
+Looks reasonable!
 
 With this, you can produce simple photometry for all stars in the Kepler field. Feel free to play around with it,
 try some of the different flags available in each of the steps, and see where ``f3`` succeeds and where it struggles
