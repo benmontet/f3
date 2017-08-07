@@ -503,6 +503,7 @@ class star(object):
                 tar_vals[g,i] /= (np.median(tar_vals[g,i])+1e-15)
                 
 
+        tar_vals_old = tar_vals + 0.0
     
         for i in xrange(outlier_iterations):
             nonzeros = np.where(tar_vals[0,:] != 0)[0]
@@ -602,8 +603,8 @@ class star(object):
         z = Z[:, qs]
         trend = z * C[None, :]
         
-        lnS = np.log(np.median(resid2, axis=0))
-        jitter = np.log(0.1*np.median(np.abs(np.diff(Y, axis=1))))
+        lnS = np.log(np.nanmedian(resid2, axis=0))
+        jitter = np.log(0.1*np.nanmedian(np.abs(np.diff(Y, axis=1))))
 
         cal_ferr = np.sqrt(np.exp(2*(jitter/trend))+z**2*np.exp(lnS)[None, :])
         
