@@ -3,7 +3,7 @@ import f3
 
 setup(
     name='f3',
-    version='1.0.2',
+    version='1.0.4',
     license='MIT',
     long_description=open('README.rst').read(),
     author='Ben Montet',
