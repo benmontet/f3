@@ -16,7 +16,7 @@ setup(
     description='Photometry for Kepler Full Frame Images',
     package_data={'': ['README.rst', 'LICENSE']},
     install_requires=[
-          'mahotas',
+          'mahotas', 'kplr'
       ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
