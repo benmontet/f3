@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.io import fits as p
+import pyfits as p
 import kplr
 from scipy.ndimage.measurements import label
 import mahotas as mh
