@@ -7,7 +7,7 @@ import mahotas as mh
 from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import splrep, splev
 import os
-import files
+from . import files
 import matplotlib.image as mpimg
 
 fmt = ['ko', 'rD', 'b^', 'gs']
@@ -174,7 +174,7 @@ class star(object):
                 factr[g] = self.mini_lc(s1, s2, g, wh, factr)
 
                 stdval = np.zeros(4)
-                for ij in xrange(4):
+                for ij in range(4):
                     thisyear = np.where(self.year[g] == ij)[0]
                     if len(thisyear) >= 3:
                         stdval[ij] = np.std(factr[g][thisyear]/np.median(factr[g][thisyear]))
@@ -235,14 +235,14 @@ class star(object):
         
         edge = edge_lim
         
-        lim = max(min_val, self.integrated_postcard[j,i]*edge)
+        lim = max(min_val, self.integrated_postcard[int(j), int(i)]*edge)
         
         maxpt = np.percentile(self.integrated_postcard, 94)
         
         bin_img = (region > lim)
         lab_img, n_features = label(bin_img)
         
-        key_targ = (lab_img == (lab_img[j,i]))
+        key_targ = (lab_img == (lab_img[int(j), int(i)]))
         tot = np.sum(key_targ)
     
         targets[key_targ] = 1
@@ -251,7 +251,7 @@ class star(object):
 
         
         lim = np.zeros(ntargets)
-        for peaks in xrange(1,ntargets):
+        for peaks in range(1,ntargets):
             k = np.argmax(region)
             j,i = np.unravel_index(k, region.shape)
             lim[peaks] = max(maxpt, edge*region[j,i])
@@ -265,21 +265,21 @@ class star(object):
             region[key_targ] = 0.0
         
         lab_img, n_features = label(targets)
-        for i in xrange(1, ntargets+1):
-            for j in xrange(extend_region_size):
+        for i in range(1, ntargets+1):
+            for j in range(extend_region_size):
                 border= mh.labeled.border(targets, 0, i)
 
                 targets[border*(region < (10)*lim[peaks])] = i
-        for i in xrange(2, ntargets+1):
-            for j in xrange(2, ntargets+1):
+        for i in range(2, ntargets+1):
+            for j in range(2, ntargets+1):
                 if i != j:
                     border = mh.labeled.border(targets, i, j)
                     if np.sum(border) != 0:
                         targets[targets == j] = i
     
         targets = mh.labeled.remove_bordering(targets)
-        for k in xrange(remove_excess):
-            for i in xrange(ntargets):
+        for k in range(remove_excess):
+            for i in range(ntargets):
                 if np.sum(self.integrated_postcard[targets == i]) < 0.01:
                     targets[targets > i] -= 1
 
@@ -310,7 +310,7 @@ class star(object):
         self.obs_flux = np.zeros_like(self.reference_flux)
 
 
-        for i in xrange(4):
+        for i in range(4):
             g = np.where(self.qs == i)[0]
             wh = np.where(self.times[g] > 54947)
 
@@ -346,14 +346,14 @@ class star(object):
         data_save = np.zeros_like(self.postcard)
         self.roll_best = np.zeros((4,2))
         
-        for i in xrange(4):
+        for i in range(4):
             g = np.where(self.qs == i)[0]
             wh = np.where(self.times[g] > 54947)
 
             self.roll_best[i] = self.do_rolltest(g, wh)
             
         self.do_photometry()
-        for i in xrange(4):
+        for i in range(4):
             g = np.where(self.qs == i)[0]
             plt.errorbar(self.times[g], self.obs_flux[g], yerr=self.flux_uncert[i], fmt=fmt[i])
             
@@ -393,13 +393,14 @@ class star(object):
         self.coordsy = []
         
         jj, ii = self.center
+        jj, ii = int(jj), int(ii)  # Indices must be integer
         plt.ion()
         img = np.sum(((self.targets == 1)*self.postcard + (self.targets == 1)*100000)
                      [:,jj-image_region:jj+image_region,ii-image_region:ii+image_region], axis=0)
         self.generate_panel(img)
         
         while len(self.coordsx) != 0:
-            for i in xrange(len(self.coordsx)):
+            for i in range(len(self.coordsx)):
                 if self.targets[self.coordsy[i]+jj-image_region,self.coordsx[i]+ii-image_region] != 1:
                     self.targets[self.coordsy[i]+jj-image_region,self.coordsx[i]+ii-image_region] = 1
                 elif self.targets[self.coordsy[i]+jj-image_region,self.coordsx[i]+ii-image_region] == 1:
@@ -439,7 +440,7 @@ class star(object):
 
         
         if do_roll == True:
-            for i in xrange(4):
+            for i in range(4):
                 g = np.where(self.qs == i)[0]
                 wh = np.where(self.times[g] > 54947)
 
@@ -482,12 +483,12 @@ class star(object):
         
         tar_vals = np.zeros((len(self.times), int(np.max(self.targets)+1-2-self.ignore_bright)))
         
-        for i in xrange(2+self.ignore_bright,int(np.max(self.targets)+1)):
+        for i in range(2+self.ignore_bright,int(np.max(self.targets)+1)):
             tval = np.sum(self.postcard[:,self.targets == i], axis=1)
             #denom += tval/np.median(tval)
             tar_vals[:,i-2-self.ignore_bright] = tval #/ np.median(tval)
             
-        for i in xrange(len(self.obs_filenames)):
+        for i in range(len(self.obs_filenames)):
             if np.max(tar_vals[i]) < min_flux:
                 tar_vals[self.qs == self.qs[i]] = 0.0
 
@@ -497,15 +498,15 @@ class star(object):
         
         self.photometry_array = all_tar
         
-        for i in xrange(len(tar_vals[0])):
-            for j in xrange(4):
+        for i in range(len(tar_vals[0])):
+            for j in range(4):
                 g = np.where(self.qs == j)[0]  
                 tar_vals[g,i] /= (np.median(tar_vals[g,i])+1e-15)
                 
 
         tar_vals_old = tar_vals + 0.0
     
-        for i in xrange(outlier_iterations):
+        for i in range(outlier_iterations):
             nonzeros = np.where(tar_vals[0,:] != 0)[0]
             med = np.median(tar_vals[:,nonzeros], axis=1)
             std = np.std(tar_vals[:,nonzeros], axis=1)
@@ -513,7 +514,7 @@ class star(object):
             if np.sum(tar_vals) != 0.0:
                 tar_vals_old = tar_vals + 0.0
 
-            for k in xrange(len(tar_vals[0])):
+            for k in range(len(tar_vals[0])):
                 h = np.where((np.abs(med-tar_vals[:,k])/std) > outlier_limit)[0]
                 if len(h) >= max_outlier_obs:
                     tar_vals[:,k] = 0
@@ -531,7 +532,7 @@ class star(object):
         no correlation between flux and position, as might be expected for high proper motion stars.
         """
         self.cm = np.zeros((len(self.postcard), 2))
-        for i in xrange(len(self.postcard)):
+        for i in range(len(self.postcard)):
             target = self.postcard[i]
             target[self.targets != 1] = 0.0
             self.cm[i] = center_of_mass(target)
@@ -558,7 +559,7 @@ class star(object):
             tout = np.array([])
             fout = np.array([])
             eout = np.array([])
-            for i in xrange(len(flux)):
+            for i in range(len(flux)):
                 t = time[i][qual[i] == 0]
                 f = flux[i][qual[i] == 0]
                 e = ferr[i][qual[i] == 0]
@@ -575,7 +576,7 @@ class star(object):
 
             self.spot_signal = np.zeros(52)
 
-            for i in xrange(len(self.times)):
+            for i in range(len(self.times)):
                 if self.times[i] < 55000:
                     self.spot_signal[i] = 1.0
                 else:
@@ -596,7 +597,7 @@ class star(object):
         
         qs = self.qs.astype(int)
         
-        for s in xrange(4):
+        for s in range(4):
             Z[:, s] = np.median((Y / C)[:, qs == s], axis=1)
 
         resid2 = (Y - Z[:, qs] * C)**2

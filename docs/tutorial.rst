@@ -110,7 +110,7 @@ Let's see how it looks!
 
     fmt = ['ko', 'rD', 'b^', 'gs']
 
-    for i in xrange(4):
+    for i in range(4):
         g = np.where(target.qs == i)[0]
         plt.errorbar(target.times[g], target.obs_flux[g], yerr=target.flux_uncert[i], fmt=fmt[i])
         
@@ -129,7 +129,7 @@ This will create an array called ``modeled_uncert`` which we can use as our unce
 
 .. code:: python
 
-    for i in xrange(4):
+    for i in range(4):
         g = np.where(a.qs == i)[0]
         plt.errorbar(a.times[g], a.obs_flux[g], yerr=a.target_uncert[g], fmt=fmt[i])
         
