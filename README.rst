@@ -19,7 +19,7 @@ Start by installing the dependencies:
 1. numpy
 2. matplotlib
 3. scipy
-4. pyfits (I know)
+4. astropy
 5. kplr (https://github.com/dfm/kplr) (The version pip will get you is insufficent, grab the one on github)
 6. mahotas (http://mahotas.readthedocs.io/en/latest/#) (pip will install this for you along with f3)
 

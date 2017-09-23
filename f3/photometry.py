@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pyfits as p
+from astropy.io import fits
 import kplr
 from scipy.ndimage.measurements import label
 import mahotas as mh
@@ -106,7 +106,7 @@ class star(object):
         fin_arr = np.zeros((len(self.times), npix, npix))
 
         for icount, iname in enumerate(self.obs_filenames): 
-            a = p.open(self.ffi_dir+iname)
+            a = fits.open(self.ffi_dir+iname)
 
                         
             quarter = a[0].header['quarter']
