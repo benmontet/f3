@@ -50,23 +50,28 @@ There is a jupyter notebook in this directory which provides an example use case
 Cite the code
 ----------------
 
-Please cite `Montet, Tovar, and Foreman-Mackey’ (submitted) if you find this code
+Please cite `Montet, Tovar, and Foreman-Mackey, 2017, ApJ, 851, 116’ if you find this code
 useful in your research. You can find a preprint of the paper at https://arxiv.org/abs/1705.07928.
-The bibtex entry for this paper is
+The bibtex entry for this paper, thanks to NASA ADS, is
 
 .. code-block:: tex
 
     @ARTICLE{f3,
-       author = {{Montet}, B.~T. and {Tovar}, G. and {Foreman-Mackey}, D.},
-        title = "{Long Term Photometric Variability in Kepler Full Frame Images: Magnetic Cycles of Sun-Like Stars}",
-      journal = {ArXiv e-prints},
-    archivePrefix = "arXiv",
-       eprint = {1705.07928},
-     primaryClass = "astro-ph.SR",
-     keywords = {Astrophysics - Solar and Stellar Astrophysics},
-         year = 2017,
-        month = may,
-       adsurl = {http://adsabs.harvard.edu/abs/2017arXiv170507928M},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-    }
+   author = {{Montet}, B.~T. and {Tovar}, G. and {Foreman-Mackey}, D.},
+    title = "{Long-term Photometric Variability in Kepler Full-frame Images: Magnetic Cycles of Sun{\ndash}like Stars}",
+  journal = {\apj},
+archivePrefix = "arXiv",
+   eprint = {1705.07928},
+ primaryClass = "astro-ph.SR",
+ keywords = {methods: data analysis, stars: activity, stars: solar-type, techniques: photometric },
+     year = 2017,
+    month = dec,
+   volume = 851,
+      eid = {116},
+    pages = {116},
+      doi = {10.3847/1538-4357/aa9e00},
+   adsurl = {http://adsabs.harvard.edu/abs/2017ApJ...851..116M},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
 
