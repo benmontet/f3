@@ -57,21 +57,21 @@ The bibtex entry for this paper, thanks to NASA ADS, is
 .. code-block:: tex
 
     @ARTICLE{f3,
-   author = {{Montet}, B.~T. and {Tovar}, G. and {Foreman-Mackey}, D.},
+    author = {{Montet}, B.~T. and {Tovar}, G. and {Foreman-Mackey}, D.},
     title = "{Long-term Photometric Variability in Kepler Full-frame Images: Magnetic Cycles of Sun{\ndash}like Stars}",
-  journal = {\apj},
-archivePrefix = "arXiv",
-   eprint = {1705.07928},
- primaryClass = "astro-ph.SR",
- keywords = {methods: data analysis, stars: activity, stars: solar-type, techniques: photometric },
-     year = 2017,
+    journal = {\apj},
+    archivePrefix = "arXiv",
+    eprint = {1705.07928},
+    primaryClass = "astro-ph.SR",
+    keywords = {methods: data analysis, stars: activity, stars: solar-type, techniques: photometric },
+    year = 2017,
     month = dec,
-   volume = 851,
-      eid = {116},
+    volume = 851,
+    eid = {116},
     pages = {116},
-      doi = {10.3847/1538-4357/aa9e00},
-   adsurl = {http://adsabs.harvard.edu/abs/2017ApJ...851..116M},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
+    doi = {10.3847/1538-4357/aa9e00},
+    adsurl = {http://adsabs.harvard.edu/abs/2017ApJ...851..116M},
+    adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
 
 
